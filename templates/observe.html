@@ -1,0 +1,220 @@
+$def with(dataobj_set)
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
+<html> 
+ <head> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+    <title>Data Observer</title> 
+    <link href="static/css/layout.css" rel="stylesheet" type="text/css"> 
+    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="static/flot/excanvas.min.js"></script><![endif]--> 
+    <script language="javascript" type="text/javascript" src="static/flot/jquery.js"></script> 
+    <script language="javascript" type="text/javascript" src="static/flot/jquery.flot.js"></script> 
+ </head> 
+    <body> 
+    <h1>Data Observer</h1> 
+ 
+    <p>
+       Simple example. You don't need to specify much to get an
+       attractive look. Put in a placeholder, make sure you set its
+       dimensions (otherwise the plot library will barf) and call the
+       plot function with the data. The axes are automatically
+       scaled.
+    </p> 
+ 
+    <div id="placeholder" style="width:600px;height:300px;">
+    </div> 
+
+    <div id="style">
+        <!--
+        <div id="plot">
+            <h3>plot</h3>
+            <div class="text-input">
+                title: 
+                <input type="text" name="title" value="" />
+            </div>
+        </div>
+        -->
+
+        $for i,dataobj in enumerate(dataobj_set):
+            <div class="graph-container">
+                <div id="graph-$(i+1)" class="graph">
+                    <h3>Graph</h3>
+                    <!-- label -->
+                    <div class="text-input graph-label">
+                        <input type="checkbox" name="show-label-$(i+1)" id="show-label-$(i+1)" class="show-label" checked />
+                        Label:
+                        <input type="text"     name="label-$(i+1)"      id="label-$(i+1)" value="$dataobj.get('label', '')" />
+                    </div>
+                    <!-- graph type -->
+                    <div class="select-input graph-type">
+                        Type:
+                        <select name="graph-$(i+1)-type">
+                            $for optname in ('lines', 'bars'):
+                                $ selected_str = "selected" if optname == dataobj.get('type') else ""
+                                <option value="$optname" $selected_str >$optname.title()</option>
+                        </select>
+                    </div>
+                    <!-- series -->
+                </div>
+
+                <div id="dataset-$(i+1)" class="dataset">
+                    <h3>Data</h3>
+                    <div id="data-$(i+1)" style="display: none;">
+                        <textarea class="data" style="width:600px; height: 300px;">$"\n".join(dataobj['data'])</textarea>
+                    </div>
+                    <div>
+                        <table id="data-table-$(i+1)" border=1>
+                            <tbody>
+                            $for i,d in enumerate(dataobj['data']):
+                                <tr>
+                                    <td><input type="text" class="x-coord-value" value="$(i+1)" /></td>
+                                    <td><input type="text" class="y-coord-value" value="$d" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        <button id="redraw">redraw</button>
+
+    </div>
+
+<script type="text/javascript"> 
+    function parseData(index, container) {
+        //
+        var dataTable = jQuery('table#data-table-' + (index+1), container);
+        var data = jQuery('tr', dataTable).map(function(index, tr) {
+            var x = jQuery("td input.x-coord-value", tr).val();
+            var y = jQuery("td input.y-coord-value", tr).val();
+            return [[ parseFloat(x),parseFloat(y) ]];
+        });
+
+        return data;
+    }
+
+    function parseLabel(index, container) {
+        var graphContainer = jQuery('#graph-' + (index+1));
+        var isChecked = jQuery('input:checkbox.show-label', graphContainer)[0].checked;
+        if (!isChecked) {
+            return ;
+        }
+        var label = jQuery('input#label-' + (index+1), graphContainer);
+        return label.attr('value');
+    }
+
+    function parseType(index, container) {
+        var selected = jQuery('select[name=graph-' + (index+1) + '-type]', container).select();
+        return selected.val();
+    }
+
+    function readDataOptions(index, data_array) {
+        // data
+        var result = {
+            data: data_array
+        };
+
+        // label
+        var label = parseLabel(index);
+        if (label) {
+            result['label'] = label;
+        };
+
+        // graph type
+        var graphType = parseType(index);
+        // bars
+        if (graphType == 'bars') {
+            result['bars'] = {show: true};
+        } 
+        // lines + points
+        else {
+            result['lines'] = {show: true};
+            result['points'] = {show: true};
+        }
+
+        return result;
+    }
+
+    function redraw() {
+        var dataObjectSet = jQuery('.graph-container').map(function(index, graphContainer) {
+            // read data
+            var dataSeries = parseData(index, graphContainer);
+            
+            // options
+            var dataObject = readDataOptions(index, dataSeries);
+           
+            return dataObject;
+        });
+
+        // draw
+        var plot = jQuery.plot(jQuery("#placeholder"), dataObjectSet, 
+            {
+                //series: {
+                //    //lines:  {show: true },
+                //    //points: {show: true },
+                //    bars:   {show: true}
+                //},
+                grid: { hoverable: true, clickable: true }
+            }
+        );
+
+        return plot;
+    }
+
+    // register #redraw button
+    jQuery('button#redraw').click(function(e) {
+        e.preventDefault();
+        redraw();
+    });
+
+    function showTooltip(x, y, contents) {
+        jQuery('<div id="tooltip">' + contents + '</div>').css({
+            position          : 'absolute',
+            display           : 'none',
+            top               : y + 5,
+            left              : x + 5,
+            border            : '1px solid #fdd',
+            padding           : '2px',
+            'background-color': '#fee',
+            opacity           : 0.80
+        }).appendTo("body").fadeIn(200);
+    };
+ 
+
+ 
+
+    // onload
+    jQuery(function () {
+        // draw
+        var plot = redraw();
+
+        // bind hover
+        var previousPoint = null;
+        jQuery("#placeholder").bind("plothover", function (event, pos, item) {
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+                    
+                    jQuery("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+
+                    var label = "";
+                    if (item.series.label) {
+                        label = item.series.label + " of ";
+                    }
+
+                    showTooltip(item.pageX, item.pageY,
+                                label + x + " = " + y);
+                }
+            }
+            else {
+                jQuery("#tooltip").remove();
+                previousPoint = null;            
+            }
+        });
+
+    });
+</script> 
+ 
+    </body> 
+</html> 
+
