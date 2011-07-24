@@ -1,0 +1,111 @@
+$def with(dataobj_set)
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
+<html> 
+ <head> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+    <title>Davis</title> 
+    <link href="static/css/layout.css" rel="stylesheet" type="text/css"> 
+    <link href="static/css/jquery-ui-lightness/jquery-ui-1.8.14.custom.css" rel="stylesheet" type="text/css"> 
+    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="static/flot/excanvas.min.js"></script><![endif]--> 
+    <script language="javascript" type="text/javascript" src="static/js/jquery-1.5.1.min.js"></script> 
+    <script language="javascript" type="text/javascript" src="static/js/jquery-ui-1.8.14.custom.min.js"></script> 
+    <!--script language="javascript" type="text/javascript" src="static/flot/jquery.js"></script--> 
+    <script language="javascript" type="text/javascript" src="static/flot/jquery.flot.js"></script> 
+    <script language="javascript" type="text/javascript" src="static/davis.js"></script> 
+ </head> 
+    <body> 
+    <h1></h1> 
+ 
+    <div id="placeholder" style="width:600px;height:300px;">
+    </div> 
+
+    <div id="style">
+        <!--
+        <div id="plot">
+            <h3>plot</h3>
+            <div class="text-input">
+                title: 
+                <input type="text" name="title" value="" />
+            </div>
+        </div>
+        -->
+
+        $for i,dataobj in enumerate(dataobj_set):
+            <div class="graph-container">
+                <div id="graph-$(i+1)" class="graph">
+                    <h3>Graph</h3>
+
+                    <!-- label -->
+                    <div class="text-input graph-label">
+                        $ is_checked = 'checked="checked"' if dataobj.get('label', False) else ''
+                        <input type="checkbox" name="show-label-$(i+1)" id="show-label-$(i+1)" class="show-label" $is_checked />
+                        Label:
+                        <input type="text"     name="label-$(i+1)"      id="label-$(i+1)" value="$dataobj.get('label', '')" />
+                    </div>
+
+                    <!-- graph type -->
+                    <div class="select-input graph-type">
+                        Type:
+                        <select name="graph-$(i+1)-type">
+                            $for optname in ('lines', 'bars'):
+                                $ selected_str = "selected" if optname == dataobj.get('type') else ""
+                                <option value="$optname" $selected_str >$optname.title()</option>
+                        </select>
+                    </div>
+
+                    <!-- series -->
+                </div>
+
+                $ data = helper.normalize_data(dataobj['data'])
+                <div id="dataset-$(i+1)" class="dataset">
+                    <h3>Data</h3>
+                    <div id="data-$(i+1)-tabs">
+                        <ul>
+                            <li><a href="#data-$(i+1)-tabs-1">Data Table</a></li>
+                            <li><a href="#data-$(i+1)-tabs-2">Text</a></li>
+                        </ul>
+                        <div id="data-$(i+1)-tabs-1" class="data-table">
+                            <table id="data-$(i+1)-table" border=1>
+                                <tbody>
+                                $for x,y in data:
+                                    <tr>
+                                        <td><input type="text" class="x-coord-value" value="$x" /></td>
+                                        <td><input type="text" class="y-coord-value" value="$y" /></td>
+                                    </tr>
+                                <tr>
+                                    <td><input type="text" class="x-coord-value" value="" /></td>
+                                    <td><input type="text" class="y-coord-value" value="" /></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="data-$(i+1)-tabs-2" class="data-textarea">
+                            <textarea id="data-$(i+1)-textarea" class="data" style="width:600px; height: 300px;">$helper.encode_data(data)</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <button id="redraw">redraw</button>
+
+    </div>
+
+<script type="text/javascript"> 
+    // register #redraw button to redraw() function
+    jQuery('button#redraw').click(function(e) {
+        e.preventDefault();
+        redraw();
+    });
+
+
+    // onload
+    jQuery(function () {
+        var plot = redraw();
+
+        jQuery("#placeholder").bind("plothover", onHoverShowTooltip);
+        // TODO: expand this to multiple dataset
+        jQuery("#data-1-tabs").tabs({select: onSelectTabUpdate});
+    });
+</script> 
+ 
+    </body> 
+</html> 

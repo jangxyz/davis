@@ -3,29 +3,60 @@
 
 import web
 
+import helper
+
 import __builtin__
 import datetime, time
 
 
 urls = (
-    '/observe', 'observe',
+    '/', 'davis',
 )
 
 
 app = web.application(urls, globals())
 render = web.template.render('templates/', 
-    globals=web.utils.dictadd( globals(), __builtin__.__dict__, {
+    globals=web.utils.dictadd( 
+        globals(), __builtin__.__dict__, 
+        { 
             'utils': web.utils,
+            'helper': helper,
         }
     )
 )
 
 
 
-class observe:
-
+class davis:
+    KEYS = ('data', 'label', 'type')
+    
     def parse_data_string(self, s):
         return s.replace(',', ' ').split(' ')
+
+    def is_multiple_key(self, key):
+        ''' return True only if key is of pattern /(data|label|type)[0-9]+/ '''
+        for __key in self.KEYS:
+            if key.startswith(__key):
+                if key.partition(__key)[-1].isdigit():
+                    return True
+        return False
+
+    def strip_key_num(self, key):
+        ''' return suffix number if key is given key (one of data, label, type), else None 
+        
+        >>> davis().strip_key_num('data1')
+        1
+        >>> davis().strip_key_num('type108')
+        108
+        >>> print davis().strip_key_num('nothing3')
+        None
+        '''
+        for k in self.KEYS:
+            if key.startswith(k):
+                suffix = key.partition(k)[-1]
+                if suffix.isdigit():
+                    return int(suffix)
+        return None
 
     def get_query_with_key(self, key, user_input=None):
         '''
@@ -41,7 +72,7 @@ class observe:
 
     def GET(self):
         '''
-            query:
+            parse query:
                 data[0-9] : numeric data, separated by comma or space
                 label[0-9]: string
                 type[0-9] : lines|bars
@@ -49,42 +80,27 @@ class observe:
         '''
         user_input = web.input()
 
-        keys = ('data', 'label', 'type')
+        keys_wo_data = [k for k in self.KEYS if k != 'data']
 
-        count = 0
-        for key in keys:
-            data_numbers = [int(k.partition(key)[-1]) for k in user_input.keys() if k.startswith(key) and k.partition(key)[-1].isdigit()]
-            if data_numbers == []:
-                continue
-            max_n = max(data_numbers)
-            count = max(max_n, count)
+        data_numbers    = [self.strip_key_num(key) for key in user_input.keys()]
+        max_data_number = max(data_numbers) if data_numbers else 0
 
-        keys_wo_data = [k for k in keys if k != 'data']
-        if count is 0:
+        # dataobj_set
+        #   dataobj is dict of {'data': [], 'label': '', 'type': ''}
+        dataobj_set = []
+        if not max_data_number:
             dataobj = {'data': self.parse_data_string(user_input['data'])}
             dataobj.update([(k, user_input.get(k, None)) for k in keys_wo_data if user_input.get(k, None) is not None])
-            dataobj_set = [dataobj]
+
+            dataobj_set.append( dataobj )
         else:
-            dataobj_set = []
-            for i in range(count):
+            for i in range(max_data_number):
                 num = `i+1`
                 dataobj = {'data': self.parse_data_string(user_input['data' + num])}
                 dataobj.update([(k, user_input.get(k+num, None)) for k in keys_wo_data if user_input.get(k+num, None) is not None])
                 dataobj_set.append( dataobj )
-        print dataobj_set
 
-#        # data_set
-#        data_set = self.get_query_with_key('data')
-#        data_set = map(self.parse_data_string, data_set)
-#
-#        # label_set
-#        label_set = self.get_query_with_key('label')
-#
-#        # type_set
-#        type_set = self.get_query_with_key('type')
-#
-        #return render.observe(data_set)
-        return render.observe(dataobj_set)
+        return render.davis(dataobj_set)
 
     def POST(self):
         return self.GET()
