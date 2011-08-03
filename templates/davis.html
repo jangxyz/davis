@@ -1,4 +1,4 @@
-$def with(dataobj_set)
+$def with(dataobj_set, conf)
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
 <html> 
  <head> 
@@ -16,7 +16,7 @@ $def with(dataobj_set)
     <body> 
     <h1></h1> 
  
-    <div id="placeholder" style="width:600px;height:300px;">
+    <div id="placeholder" style="width:$(conf.width)px;height:$(conf.height)px;">
     </div> 
 
     <div id="style">
@@ -39,7 +39,7 @@ $def with(dataobj_set)
                     <div class="text-input graph-label">
                         $ is_checked = 'checked="checked"' if dataobj.get('label', False) else ''
                         <input type="checkbox" name="show-label-$(i+1)" id="show-label-$(i+1)" class="show-label" $is_checked />
-                        Label:
+                        <label for="show-label-$(i+1)">Label</label>:
                         <input type="text"     name="label-$(i+1)"      id="label-$(i+1)" value="$dataobj.get('label', '')" />
                     </div>
 
@@ -103,7 +103,8 @@ $def with(dataobj_set)
 
         jQuery("#placeholder").bind("plothover", onHoverShowTooltip);
         // TODO: expand this to multiple dataset
-        jQuery("#data-1-tabs").tabs({select: onSelectTabUpdate});
+        $for i in xrange(len(dataobj_set)):
+            jQuery("#data-$(i+1)-tabs").tabs({select: onSelectTabUpdate});
     });
 </script> 
  

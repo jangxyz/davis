@@ -134,7 +134,8 @@ function onSelectTabUpdate(event, ui) {
     // textarea data selected: read from table, decode, and apply to textarea
     else {
         var data = readDataFromTable(table);
-        writeDataToTextarea(textarea, data);
+        writeDataToTextarea(textarea, data); 
+        $(textarea).height($(table).height());
     }
 }
 
@@ -151,8 +152,6 @@ function readDataFromTable(tableEl) {
 function writeDataToTable(tableEl, data) {
     // erase table
     $(tableEl).find('tr').remove();
-
-    console.log(data);
 
     // add row by row
     $(data).each(function(i, xy) {
@@ -178,8 +177,6 @@ function writeDataToTextarea(textareaEl, data) {
 
     // write
     var dataStr = $(data).map(function(i, xy) { return xy.join(" ") }).get().join("\n");
-    console.log(data);
-    console.log(dataStr);
     $(textareaEl).val(dataStr);
 }
 
